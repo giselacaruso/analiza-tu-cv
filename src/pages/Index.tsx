@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
@@ -6,6 +5,9 @@ import PDFUploader from "@/components/PDFUploader";
 import FeedbackDisplay, { Feedback } from "@/components/FeedbackDisplay";
 import AuthDialog from "@/components/AuthDialog";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { extractTextFromPDF } from "@/utils/pdfUtils";
+import { toast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const { isAuthenticated, openAuthDialog, logout } = useAuth();
@@ -13,7 +15,6 @@ const Index = () => {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
 
   const handleUpload = async (file: File) => {
-    // If user is not authenticated, open auth dialog
     if (!isAuthenticated) {
       openAuthDialog();
       return;
@@ -21,53 +22,30 @@ const Index = () => {
 
     setCurrentStep("processing");
     
-    // Mock processing and feedback generation
-    // In a real implementation, this would:
-    // 1. Upload the PDF to Supabase storage
-    // 2. Extract text from PDF
-    // 3. Send text to OpenAI for analysis
-    // 4. Parse and display the response
-    
-    setTimeout(() => {
-      const mockFeedback: Feedback = {
-        overall: "Your CV demonstrates strong technical skills and education. However, it could benefit from more quantifiable achievements and a clearer structure. Consider adding metrics to showcase your impact and reorganizing sections for better readability.",
-        sections: [
-          {
-            title: "Strong Technical Skills",
-            content: "Your technical skills section is comprehensive and showcases relevant technologies for your target roles. The organization by categories (languages, frameworks, tools) makes it easy to scan.",
-            type: "positive"
-          },
-          {
-            title: "Education Presentation",
-            content: "Your educational background is well presented with clear details on degrees, institutions, and graduation dates.",
-            type: "positive"
-          },
-          {
-            title: "Work Experience Impact",
-            content: "Your work experience lacks quantifiable achievements. Add metrics to demonstrate your impact (e.g., 'Improved application performance by 40%' rather than just 'Improved application performance').",
-            type: "improvement"
-          },
-          {
-            title: "CV Structure",
-            content: "The overall structure could be improved by prioritizing most relevant information first. Consider moving your work experience above education if you're not a recent graduate.",
-            type: "improvement"
-          },
-          {
-            title: "Personal Projects",
-            content: "Adding 1-2 relevant personal projects could strengthen your application, especially if they demonstrate skills relevant to your target position.",
-            type: "suggestion"
-          },
-          {
-            title: "ATS Optimization",
-            content: "Consider optimizing your CV for Applicant Tracking Systems by incorporating more keywords from job descriptions you're targeting.",
-            type: "suggestion"
-          }
-        ]
-      };
+    try {
+      // Extract text from PDF
+      const text = await extractTextFromPDF(file);
       
-      setFeedback(mockFeedback);
+      // Call the analyze-cv Edge Function
+      const { data, error } = await supabase.functions.invoke('analyze-cv', {
+        body: { cvText: text }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setFeedback(data);
       setCurrentStep("feedback");
-    }, 3000);
+    } catch (error) {
+      console.error('Error analyzing CV:', error);
+      toast({
+        title: "Error",
+        description: "Ha ocurrido un error al analizar tu CV. Por favor, inténtalo de nuevo.",
+        variant: "destructive"
+      });
+      setCurrentStep("upload");
+    }
   };
 
   const handleReset = () => {

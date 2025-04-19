@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
@@ -26,12 +27,17 @@ const Index = () => {
       // Extract text from PDF
       const text = await extractTextFromPDF(file);
       
+      console.log("Texto extraído del PDF (primeros 100 caracteres):", text.substring(0, 100));
+      
       // Call the analyze-cv Edge Function with the extracted text
       const { data, error } = await supabase.functions.invoke('analyze-cv', {
         body: { cvText: text }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error en función de Supabase:", error);
+        throw error;
+      }
 
       setFeedback(data);
       setCurrentStep("feedback");

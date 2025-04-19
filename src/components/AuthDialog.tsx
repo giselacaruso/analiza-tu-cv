@@ -5,62 +5,57 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/context/AuthContext";
 
-interface AuthDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onLogin: (email: string, password: string) => void;
-  onRegister: (email: string, password: string) => void;
-}
-
-const AuthDialog = ({ isOpen, onClose, onLogin, onRegister }: AuthDialogProps) => {
+export default function AuthDialog() {
+  const { isAuthDialogOpen, closeAuthDialog, login, register } = useAuth();
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLoginMode) {
-      onLogin(email, password);
+      await login(email, password);
     } else {
-      onRegister(email, password);
+      await register(email, password);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isAuthDialogOpen} onOpenChange={closeAuthDialog}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{isLoginMode ? "Sign In" : "Create Account"}</DialogTitle>
+          <DialogTitle>{isLoginMode ? "Iniciar Sesión" : "Crear Cuenta"}</DialogTitle>
           <DialogDescription>
             {isLoginMode 
-              ? "Sign in to access your CV analysis history and profiles." 
-              : "Create an account to save your CV analysis and feedback."}
+              ? "Inicia sesión para acceder a tu historial de análisis de CV." 
+              : "Crea una cuenta para comenzar a mejorar tu CV con IA."}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium">
-              Email
+              Correo Electrónico
             </label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
+              placeholder="tu@email.com"
               required
             />
           </div>
+          
           <div className="space-y-2">
             <label htmlFor="password" className="text-sm font-medium">
-              Password
+              Contraseña
             </label>
             <Input
               id="password"
@@ -72,9 +67,9 @@ const AuthDialog = ({ isOpen, onClose, onLogin, onRegister }: AuthDialogProps) =
             />
           </div>
 
-          <DialogFooter className="flex-col sm:flex-col gap-2 sm:gap-2">
+          <div className="flex flex-col gap-2">
             <Button type="submit" className="w-full">
-              {isLoginMode ? "Sign In" : "Create Account"}
+              {isLoginMode ? "Iniciar Sesión" : "Crear Cuenta"}
             </Button>
             <Button 
               type="button" 
@@ -83,14 +78,12 @@ const AuthDialog = ({ isOpen, onClose, onLogin, onRegister }: AuthDialogProps) =
               onClick={() => setIsLoginMode(!isLoginMode)}
             >
               {isLoginMode 
-                ? "Don't have an account? Sign Up" 
-                : "Already have an account? Sign In"}
+                ? "¿No tienes cuenta? Regístrate" 
+                : "¿Ya tienes cuenta? Inicia sesión"}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
   );
-};
-
-export default AuthDialog;
+}

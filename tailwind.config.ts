@@ -28,6 +28,15 @@ export default {
 					DEFAULT: 'hsl(var(--primary))',
 					foreground: 'hsl(var(--primary-foreground))'
 				},
+				cv: {
+					blue: '#3b82f6',
+					darkblue: '#1e40af',
+					lightblue: '#93c5fd',
+					gray: '#64748b',
+					lightgray: '#f1f5f9',
+					success: '#10b981',
+					warning: '#f59e0b',
+				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
 					foreground: 'hsl(var(--secondary-foreground))'

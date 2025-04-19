@@ -8,7 +8,7 @@ import AuthDialog from "@/components/AuthDialog";
 import { useAuth } from "@/context/AuthContext";
 
 const Index = () => {
-  const { isAuthenticated, isAuthDialogOpen, openAuthDialog, closeAuthDialog, login, register, logout } = useAuth();
+  const { isAuthenticated, openAuthDialog, logout } = useAuth();
   const [currentStep, setCurrentStep] = useState<"upload" | "processing" | "feedback">("upload");
   const [feedback, setFeedback] = useState<Feedback | null>(null);
 
@@ -77,12 +77,7 @@ const Index = () => {
 
   return (
     <Layout isLoggedIn={isAuthenticated} onLogin={openAuthDialog} onLogout={logout}>
-      <AuthDialog 
-        isOpen={isAuthDialogOpen} 
-        onClose={closeAuthDialog} 
-        onLogin={login} 
-        onRegister={register} 
-      />
+      <AuthDialog />
       
       <div className="container mx-auto px-4 py-12">
         {currentStep === "upload" && (

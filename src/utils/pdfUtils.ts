@@ -1,9 +1,13 @@
-
 /**
  * Utility functions for handling PDF files
  * Note: This is a placeholder. In a real implementation, you would use 
  * libraries like pdf.js or a backend service to extract text from PDFs.
  */
+
+import * as pdfjsLib from 'pdfjs-dist';
+import { TextItem } from 'pdfjs-dist/types/src/display/api';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 /**
  * Extract text content from a PDF file
@@ -11,29 +15,25 @@
  * @returns Promise with extracted text
  */
 export const extractTextFromPDF = async (file: File): Promise<string> => {
-  // This is a mock implementation
-  // In a real app, you would use pdf.js or a Supabase function
-  
-  return new Promise((resolve) => {
-    // Simulate processing time
-    setTimeout(() => {
-      // Return mock text content
-      resolve(
-        "John Doe\n" +
-        "Software Engineer\n\n" +
-        "EXPERIENCE\n" +
-        "Senior Developer at Tech Corp (2020-Present)\n" +
-        "- Led development of customer-facing web applications\n" +
-        "- Implemented CI/CD pipelines\n\n" +
-        "Junior Developer at Startup Inc (2018-2020)\n" +
-        "- Developed features for e-commerce platform\n\n" +
-        "EDUCATION\n" +
-        "BS Computer Science, University of Technology (2014-2018)\n\n" +
-        "SKILLS\n" +
-        "JavaScript, TypeScript, React, Node.js, Git, CI/CD"
-      );
-    }, 1500);
-  });
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .map((item: TextItem) => item.str)
+        .join(' ');
+      fullText += pageText + '\n';
+    }
+
+    return fullText;
+  } catch (error) {
+    console.error('Error extracting text from PDF:', error);
+    throw new Error('No se pudo extraer el texto del PDF');
+  }
 };
 
 /**

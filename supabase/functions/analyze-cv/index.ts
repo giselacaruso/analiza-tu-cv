@@ -21,6 +21,8 @@ serve(async (req) => {
       throw new Error('No CV text provided');
     }
 
+    console.log("Recibido texto del CV para analizar (primeros 100 caracteres):", cvText.substring(0, 100));
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -52,23 +54,63 @@ serve(async (req) => {
       }),
     });
 
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Error de la API de OpenAI:", errorData);
+      throw new Error(`Error from OpenAI API: ${errorData.error?.message || 'Unknown error'}`);
+    }
+
     const data = await response.json();
+    console.log("Respuesta recibida de OpenAI");
+    
     const analysis = data.choices[0].message.content;
+    console.log("Análisis en texto plano:", analysis.substring(0, 100) + "...");
 
-    // Parse the response to ensure it's valid JSON
-    const parsedAnalysis = JSON.parse(analysis);
+    try {
+      // Parse the response to ensure it's valid JSON
+      const parsedAnalysis = JSON.parse(analysis);
+      console.log("Análisis parseado correctamente como JSON");
 
-    return new Response(
-      JSON.stringify(parsedAnalysis),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+      return new Response(
+        JSON.stringify(parsedAnalysis),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } catch (parseError) {
+      console.error("Error al parsear respuesta de OpenAI como JSON:", parseError);
+      // Intentar crear un objeto JSON válido a partir de la respuesta en texto
+      const fallbackResponse = {
+        overall: "Análisis realizado, pero hubo un problema al formatear los resultados.",
+        sections: [
+          {
+            title: "Respuesta Completa",
+            content: analysis,
+            type: "suggestion"
+          }
+        ]
+      };
+      
+      return new Response(
+        JSON.stringify(fallbackResponse),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
   } catch (error) {
-    console.error('Error analyzing CV:', error);
+    console.error('Error analizando CV:', error);
     return new Response(
-      JSON.stringify({ error: 'Error analyzing CV' }),
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'Error analyzing CV',
+        overall: "Lo sentimos, ha ocurrido un error al analizar tu CV.",
+        sections: [
+          {
+            title: "Error",
+            content: error instanceof Error ? error.message : "Error desconocido",
+            type: "improvement"
+          }
+        ]
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
+        status: 200 // Devolvemos 200 en lugar de 500 para que el cliente reciba la respuesta
       }
     );
   }

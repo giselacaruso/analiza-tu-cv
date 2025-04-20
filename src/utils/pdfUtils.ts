@@ -9,7 +9,8 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { TextItem } from 'pdfjs-dist/types/src/display/api';
 
 // Configurar el worker de PDF.js
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+const workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 
 /**
  * Extract text content from a PDF file
@@ -18,34 +19,45 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.j
  */
 export const extractTextFromPDF = async (file: File): Promise<string> => {
   try {
+    console.log("Comenzando extracción de PDF...");
+    
     // Convertir el archivo a ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
+    console.log("Archivo convertido a ArrayBuffer");
     
     // Crear un objeto LoadingTask con opciones compatibles
     const loadingTask = pdfjsLib.getDocument({
       data: arrayBuffer,
       useWorkerFetch: false,
       isEvalSupported: true,
-      useSystemFonts: true
+      useSystemFonts: true,
+      cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/cmaps/',
+      cMapPacked: true,
     });
     
+    console.log("Cargando documento PDF...");
     // Obtener el documento PDF
     const pdf = await loadingTask.promise;
+    console.log(`PDF cargado con ${pdf.numPages} páginas`);
+    
     let fullText = '';
 
     // Extraer texto de cada página
     for (let i = 1; i <= pdf.numPages; i++) {
+      console.log(`Extrayendo texto de la página ${i}...`);
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
       const pageText = textContent.items
+        .filter((item: any) => 'str' in item)
         .map((item: TextItem) => item.str)
         .join(' ');
       fullText += pageText + '\n';
     }
 
-    return fullText;
+    console.log("Texto extraído correctamente");
+    return fullText || "No se encontró texto en el PDF.";
   } catch (error) {
-    console.error('Error extracting text from PDF:', error);
+    console.error('Error detallado extrayendo texto del PDF:', error);
     
     // Si hay un error, mostrar una solución alternativa con datos de ejemplo
     console.log('Usando texto de ejemplo debido al error en la extracción de PDF');

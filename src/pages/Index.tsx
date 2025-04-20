@@ -14,6 +14,7 @@ const Index = () => {
   const { isAuthenticated, openAuthDialog, logout } = useAuth();
   const [currentStep, setCurrentStep] = useState<"upload" | "processing" | "feedback">("upload");
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleUpload = async (file: File) => {
     if (!isAuthenticated) {
@@ -22,33 +23,49 @@ const Index = () => {
     }
 
     setCurrentStep("processing");
+    setIsProcessing(true);
     
     try {
+      console.log("Iniciando proceso de análisis para archivo:", file.name);
+      
       // Extract text from PDF
+      console.log("Extrayendo texto del PDF...");
       const text = await extractTextFromPDF(file);
+      
+      if (!text || text.trim() === "") {
+        throw new Error("No se pudo extraer texto del PDF o el archivo está vacío");
+      }
       
       console.log("Texto extraído del PDF (primeros 100 caracteres):", text.substring(0, 100));
       
       // Call the analyze-cv Edge Function with the extracted text
+      console.log("Llamando a la función de análisis de Supabase...");
       const { data, error } = await supabase.functions.invoke('analyze-cv', {
         body: { cvText: text }
       });
 
       if (error) {
         console.error("Error en función de Supabase:", error);
-        throw error;
+        throw new Error(`Error al analizar el CV: ${error.message}`);
       }
 
+      if (!data) {
+        throw new Error("No se recibieron datos de análisis");
+      }
+
+      console.log("Análisis completado correctamente");
       setFeedback(data);
       setCurrentStep("feedback");
     } catch (error) {
-      console.error('Error analyzing CV:', error);
+      console.error('Error detallado al analizar CV:', error);
       toast({
         title: "Error",
-        description: "Ha ocurrido un error al analizar tu CV. Por favor, inténtalo de nuevo.",
+        description: error instanceof Error ? error.message : "Ha ocurrido un error al analizar tu CV. Por favor, inténtalo de nuevo.",
         variant: "destructive"
       });
       setCurrentStep("upload");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -71,7 +88,7 @@ const Index = () => {
               </p>
             </div>
             
-            <PDFUploader onUpload={handleUpload} isProcessing={false} />
+            <PDFUploader onUpload={handleUpload} isProcessing={isProcessing} />
             
             <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
               <div className="p-6 rounded-lg bg-white shadow-sm border border-gray-100">

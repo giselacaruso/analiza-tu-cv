@@ -3,7 +3,7 @@ import { useState, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Upload as UploadIcon, FileText as FileTextIcon } from "lucide-react";
+import { Upload as UploadIcon, FileText as FileTextIcon, Loader2 } from "lucide-react";
 
 interface PDFUploaderProps {
   onUpload: (file: File) => void;
@@ -98,6 +98,7 @@ const PDFUploader = ({ onUpload, isProcessing }: PDFUploaderProps) => {
               variant="outline" 
               className="mt-4 cursor-pointer"
               onClick={() => document.getElementById("cv-upload")?.click()}
+              disabled={isProcessing}
             >
               Select PDF File
             </Button>
@@ -110,7 +111,14 @@ const PDFUploader = ({ onUpload, isProcessing }: PDFUploaderProps) => {
           disabled={!selectedFile || isProcessing}
           className="w-full"
         >
-          {isProcessing ? "Processing..." : "Analyze My CV"}
+          {isProcessing ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            "Analyze My CV"
+          )}
         </Button>
       </CardFooter>
     </Card>
